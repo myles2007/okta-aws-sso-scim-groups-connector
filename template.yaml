@@ -12,6 +12,51 @@ Globals:
 
 Resources:
 
+  ReadAppSecretsPolicy:
+    Type: "AWS::IAM::ManagedPolicy"
+    Properties:
+      Path: "/app/okta-aws-sso-scim-connector/read-secrets/"
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Action: "secretsManager:GetSecretValue"
+            Resource: !Ref Secrets
+
+  TokenAuthorizerRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/app/okta-aws-sso-scim-connector/token-authorizer/"
+      ManagedPolicyArns:
+        - !Ref ReadAppSecretsPolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+
+  EventProcessorRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      Path: "/app/okta-aws-sso-scim-connector/event-processor/"
+      ManagedPolicyArns:
+        - !Ref ReadAppSecretsPolicy
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - lambda.amazonaws.com
+            Action:
+              - 'sts:AssumeRole'
+
   Secrets:
     Type: AWS::SecretsManager::Secret
     Properties:
@@ -33,6 +78,11 @@ Resources:
         Authorizers:
           TokenAuth:
             FunctionArn: !GetAtt TokenAuthorizer.Arn
+            FunctionPayloadType: "REQUEST"
+            Identity:
+              Headers:
+                - Authorization
+                - x-api-key
         ApiKeyRequired: true # sets for all methods
         UsagePlan:
           CreateUsagePlan: "PER_API"
@@ -65,6 +115,7 @@ Resources:
             RestApiId: !Ref OktaEventsApi
             Path: /
             Method: post
+      Role: !GetAtt EventProcessorRole.Arn
 
   TokenAuthorizer:
     Type: AWS::Serverless::Function
@@ -72,6 +123,7 @@ Resources:
       CodeUri: app
       Handler: authorizer.lambda_handler
       Runtime: python3.8
+      Role: !GetAtt TokenAuthorizerRole.Arn
 
 Outputs:
   OktaEventsApi:
@@ -86,6 +138,3 @@ Outputs:
   EventProcessor:
     Description: "Process events from Okta (specifically interesting group membership changes"
     Value: !GetAtt EventProcessor.Arn
-  EventProcessorIamRole:
-    Description: "Implicit IAM Role created for EventHookVerifier function"
-    Value: !GetAtt EventProcessorRole.Arn
