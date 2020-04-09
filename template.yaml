@@ -10,8 +10,12 @@ Globals:
   Function:
     Timeout: 3
 
-Resources:
+Parameters:
+  ScimUrl:
+    Type: String
+    Description: "The SCIM url provided when setting up AWS SSO."
 
+Resources:
   ReadAppSecretsPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
@@ -115,6 +119,9 @@ Resources:
             RestApiId: !Ref OktaEventsApi
             Path: /
             Method: post
+      Environment:
+        Variables:
+          SCIM_URL: !Ref ScimUrl
       Role: !GetAtt EventProcessorRole.Arn
 
   TokenAuthorizer:
