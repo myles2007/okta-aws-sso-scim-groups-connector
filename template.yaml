@@ -52,6 +52,19 @@ Resources:
             Path: /
             Method: get
 
+  EventProcessor:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: app/
+      Handler: processor.lambda_handler
+      Runtime: python3.8
+      Events:
+        OktaEvent: # Should just be group member added/group member removed, but unfiltered.
+          Type: Api
+          Properties:
+            RestApiId: !Ref OktaEventsApi
+            Path: /
+            Method: post
 
   TokenAuthorizer:
     Type: AWS::Serverless::Function
@@ -70,3 +83,9 @@ Outputs:
   EventHookVerifierIamRole:
     Description: "Implicit IAM Role created for EventHookVerifier function"
     Value: !GetAtt EventHookVerifierRole.Arn
+  EventProcessor:
+    Description: "Process events from Okta (specifically interesting group membership changes"
+    Value: !GetAtt EventProcessor.Arn
+  EventProcessorIamRole:
+    Description: "Implicit IAM Role created for EventHookVerifier function"
+    Value: !GetAtt EventProcessorRole.Arn
