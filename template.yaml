@@ -12,6 +12,16 @@ Globals:
 
 Resources:
 
+  Secrets:
+    Type: AWS::SecretsManager::Secret
+    Properties:
+      Description: "Contains the secrets expected to be provided by Okta and required by AWS SSO."
+      Name: app/okta-to-aws-sso
+      GenerateSecretString:
+        SecretStringTemplate: "{\"aws_sso_scim_key\": \"<MUST BE PROVIDED>\"}"
+        GenerateStringKey: "auth_token_for_okta"
+        PasswordLength: 128
+
   OktaEventsApi:
     Type: "AWS::Serverless::Api"
     Properties:
@@ -41,6 +51,14 @@ Resources:
             RestApiId: !Ref OktaEventsApi
             Path: /
             Method: get
+
+
+  TokenAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: app
+      Handler: authorizer.lambda_handler
+      Runtime: python3.8
 
 Outputs:
   OktaEventsApi:
