@@ -8,7 +8,8 @@ import boto3
 GroupMemberPatch = collections.namedtuple('GroupMemberPatch', ['targetGoperation', 'display', 'id'])
 TARGET_TYPE_GROUP = "UserGroup"
 TARGET_TYPE_USER = "User"
-AWS_GROUP_PREFIX = "AWS_"
+
+AWS_GROUP_PREFIX = os.environ['GROUP_PREFIX']
 SCIM_URL = os.environ['SCIM_URL']
 
 PATCH_OPERATION_FOR_OKTA_EVENT = {
