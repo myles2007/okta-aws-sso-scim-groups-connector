@@ -19,10 +19,10 @@
   - [Inspecting Logs (optional)](#inspecting-logs-optional)
 
 # What it Does
-This application listens to group membership events from Okta and syncrhonizes membership changes to identically named groups in AWS SSO which begin with the prefix `AWS_`. Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO for automatic provisioning.
+This application listens to group membership events from Okta and synchronizes membership changes to identically named groups in AWS SSO which begin with the prefix `AWS_`. Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO for automatic provisioning.
 
 # Why it Exists
-The company I work for (BriteCore) utilizes Okta as our identity provider and wants to adopt AWS Single Sign-on (SSO) to simplify access and access management for our growing number of AWS accounts.
+The company I work for ([BriteCore](https://www.britecore.com/)) utilizes Okta as our identity provider and wants to adopt AWS Single Sign-on (SSO) to simplify access and access management for our growing number of AWS accounts.
 
 [AWS SSO supports SAML 2.0 IdPs and automated provisioning via SCIM][aws-sso-external-idp-docs], but unfortunately there's an issue with the SCIM provisioning between Okta and AWS SSO at this time (2020-04-11). Specifically, attempting to push group membership from Okta to AWS SSO results an error like the following.
 
@@ -47,16 +47,16 @@ This is because:
  * Okta does not provide hookable events around group renames and description updates.
 
 # Operational Considerations
-I put this solution together quickly and in my spare time. My aim was to solve the general need, not solve the problem perfectlty. I welcome contributions and will likely introduce a few improvements myself, but for now there are a few things you should keep in mind if you choose to utilize it yourself.
+I put this solution together quickly and in my spare time. My aim was to solve the general need, not solve the problem perfectly. I welcome contributions and will likely introduce a few improvements myself, but for now there are a few things you should keep in mind if you choose to utilize it yourself.
 
  ## Group Names
 This application will only pay attention to group membership changes for groups beginning with the `AWS_` prefix. This prefix is not currently configurable.
 
 ## Group Renames
 
-Renaming a group in Okta will break ongoing syncrhonization.
+Renaming a group in Okta will break ongoing synchronization.
 
-As noted in the [What it Does Not Do](#what-it-does-not-do) section, this application does not syncrhonize renames. As indicated in the [What it Does](#what-it-does) section, it only synchronizes group names which match exactly.
+As noted in the [What it Does Not Do](#what-it-does-not-do) section, this application does not synchronize renames. As indicated in the [What it Does](#what-it-does) section, it only synchronizes group names which match exactly.
 
 To work around this limitation, create a new group with the desired name (remember, it must start with `AWS_`), migrate all membership from the existing group to the new one, and then delete the old one.
 
@@ -65,7 +65,7 @@ To work around this limitation, create a new group with the desired name (rememb
 While the underlying technology is scalable, I've conducted no significant load testing for this solution. 
 
 ### Event Delivery Guarantees
-Okta events are delivered at least once and do not guarnatee ordering. This could present an issue if the same user's presence in is rapidly changed in the same group. In this case, out of order or repeated executions could leave the membership in an undesired state.
+Okta events are delivered at least once and do not guarantee ordering. This could present an issue if the same user's presence in is rapidly changed in the same group. In this case, out of order or repeated executions could leave the membership in an undesired state.
 
 Practically speaking, this is very unlikely to be an issue during normal use of this application for the following reasons:
 
@@ -81,7 +81,7 @@ Currently, the Lambda function (and Okta) have a 3 second timeout in place which
 In practice, I've not yet seen this be an issue, even when adding/remove a number of users to/from a group at the same time via Okta's UI.
 
 ### Number of Users and Groups
-To gather sufficient information to generate the group membership patches, this applicaiton requests member and group listings from AWS SSO's SCIM API. To avoid dealing with pagination and the latency of multiple requests, it currently makes a request for the first 1000 users and 1000 groups. It does not handle multiple pages.
+To gather sufficient information to generate the group membership patches, this application requests member and group listings from AWS SSO's SCIM API. To avoid dealing with pagination and the latency of multiple requests, it currently makes a request for the first 1000 users and 1000 groups. It does not handle multiple pages.
 
 Practically, this means the application will not work in all cases if you have more than 1000 users or more than 1000 groups. It's also possible that latency could become problematic with large numbers of users or that there is an execution time error that will caues a request for such a large number of users/groups to fail.
 
@@ -123,7 +123,7 @@ This is a simple application with a simple structure.
 >
 > For the time being, the steps below are focused exclusively on deploying this application to AWS and configuring the needed event hook in Okta. They assume you have already:
 >
-> 1. Configured a SAML 2.0 applicaiton in Okta.
+> 1. Configured a SAML 2.0 application in Okta.
 > 2. Configured AWS SSO to use Okta as its IdP.
 > 3. Enabled SCIM provisioning in AWS SSO and Okta.
 >    * You will also need the SCIM endpoint and access key provided during this process. The URL is retrievable at any time, but access keys are only provided at the time of creation.
@@ -141,7 +141,7 @@ This application is defined using [AWS SAM][] and is currently intended to be ma
 [docker-install]: https://hub.docker.com/search/?type=edition&offering=community
 [install-python3]: https://github.com/pyenv/pyenv
 
-With the above needs satsified, run the following commands in your shell to deploy the application for the first time:
+With the above needs satisfied, run the following commands in your shell to deploy the application for the first time:
 
 ```bash
 sam build --use-container
@@ -190,7 +190,7 @@ As depicted below, you'll need to provide the following inputs:
 If your event hook verifies successfully, everything should be working. 
 
 ## Inspecting Logs (optional)
-SAM CLI has a command called `sam logs`. The `sam logs` command lets you fetch logs generated by a deployed lambda function from the command line.
+SAM CLI has a command called `sam logs`. The `sam logs` command lets you fetch logs generated by a deployed Lambda function from the command line.
 
 `NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
 
