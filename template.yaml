@@ -32,7 +32,7 @@ Metadata:
     Description: >
       This application listens to group membership events from Okta and syncrhonizes
       membership changes to identically named groups in AWS SSO which begin with the
-      prefix `AWS_`.
+      prefix specified by the `GroupPrefix` parameter.
 
       Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO
       for automatic provisioning.
