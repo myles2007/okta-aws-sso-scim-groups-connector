@@ -171,7 +171,7 @@ Navigate to the secret created by the deployment (it's named `app/okta-aws-sso-s
 
 To proceed:
 1. Take note of the `auth_token_for_okta`; you'll need it to configure Okta.
-2. Input the SCIM access key/token as the value for `aws-sso-scim-key`.
+2. Input the SCIM access key/token as the value for `aws_sso_scim_key`.
 
 ## Configuring an Event Hook in Okta
 Please follow the instructions in [Okta's documentation](https://console.aws.amazon.com/secretsmanager/home?region=us-east-1#/secret?name=app%2Fokta-to-aws-sso).
