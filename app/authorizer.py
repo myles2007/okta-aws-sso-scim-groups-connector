@@ -1,7 +1,10 @@
 import datetime
 import json
+import os
 
 import boto3
+
+SECRET_ID = os.environ("SECRET_ID")
 
 CACHED_AUTH_TOKEN = None # Once set, wait at least TOKEN_CACHE_TIME to look up.
 TOKEN_CACHE_TIME = 300 # seconds
@@ -23,7 +26,7 @@ def retrieve_auth_token():
     if not CACHED_AUTH_TOKEN or token_cache_expired:
         client = boto3.client('secretsmanager')
         secret =  client.get_secret_value(
-            SecretId="app/okta-to-aws-sso"
+            SecretId=SECRET_ID
         )
         secret_string = json.loads(secret['SecretString'])
         CACHED_AUTH_TOKEN = secret_string['auth_token_for_okta']
