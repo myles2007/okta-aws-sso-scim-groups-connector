@@ -38,8 +38,8 @@ Metadata:
       for automatic provisioning.
     Labels: ['AWS SSO', 'Okta', 'IAM']
     SpdxLicenseId: MIT
-    LicenseUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector/blob/master/LICENSE
-    ReadmeUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector/blob/master/README.md
+    LicenseUrl: LICENSE
+    ReadmeUrl: README.md
     HomePageUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector
     SourceCodeUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector
 
