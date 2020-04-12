@@ -20,6 +20,25 @@ Parameters:
     Type: String
     Description: "The SCIM url provided when setting up AWS SSO."
 
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Author: Myles Loffler
+    Name: "Okta AWS SSO SCIM Groups Connector"
+    SemanticVersion: 0.0.1
+    Description: >
+      This application listens to group membership events from Okta and syncrhonizes
+      membership changes to identically named groups in AWS SSO which begin with the
+      prefix `AWS_`.
+
+      Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO
+      for automatic provisioning.
+    Labels: ['AWS SSO', 'Okta', 'IAM']
+    SpdxLicenseId: MIT
+    LicenseUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector/blob/master/LICENSE
+    ReadmeUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector/blob/master/README.md
+    HomePageUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector
+    SourceCodeUrl: https://github.com/myles2007/okta-aws-sso-scim-groups-connector
+
 Resources:
   ReadAppSecretsPolicy:
     Type: "AWS::IAM::ManagedPolicy"
