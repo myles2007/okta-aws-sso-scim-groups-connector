@@ -1,0 +1,64 @@
+{
+    "eventType": "com.okta.event_hook",
+    "eventTypeVersion": "1.0",
+    "cloudEventsVersion": "0.1",
+    "source": "https://.okta.com/api/v1/eventHooks",
+    "eventId": "d77d8604-1234-abcd-5678-de003fe4303f",
+    "data": {
+        "events": [
+            {
+                "uuid": "b817b3ac-1234-asdf-5678-651df8bf866b",
+                "published": "2020-04-03T04:15:14.906Z",
+                "eventType": "group.user_membership.remove",
+                "version": "0",
+                "displayMessage": "Remove user from group membership",
+                "severity": "INFO",
+                "client": {
+                    "ipChain": []
+                },
+                "actor": {
+                    "id": "1b4gwZHqKX35mpIkK2z6",
+                    "type": "User",
+                    "alternateId": "myles@email.com",
+                    "displayName": "Myles Loffler"
+                },
+                "outcome": {
+                    "result": "SUCCESS"
+                },
+                "target": [
+                    {
+                        "id": "2b4gwZHqKX35mpIkK2z6",
+                        "type": "User",
+                        "alternateId": "john.doe@email.com",
+                        "displayName": "John Doe"
+                    },
+                    {
+                        "id": "3b4gwZHqKX35mpIkK2z6",
+                        "type": "UserGroup",
+                        "alternateId": "unknown",
+                        "displayName": "AWS_SuperAdmins"
+                    }
+                ],
+                "transaction": {
+                    "type": "JOB",
+                    "id": "4b4gwZHqKX35mpIkK2z6",
+                    "detail": {}
+                },
+                "debugContext": {
+                    "debugData": {
+                        "threatSuspected": "false",
+                        "targetEventHookIds": "5b4gwZHqKX35mpIkK2z6"
+                    }
+                },
+                "legacyEventType": "core.user_group_member.user_remove",
+                "authenticationContext": {
+                    "authenticationStep": 0,
+                    "externalSessionId": "flskzA9d0as0dfERbnv_yGshw"
+                },
+                "securityContext": {}
+            }
+        ]
+    },
+    "eventTime": "2020-04-03T04:15:21.317Z",
+    "contentType": "application/json"
+}

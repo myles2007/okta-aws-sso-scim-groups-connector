@@ -1,0 +1,64 @@
+{
+    "eventType": "com.okta.event_hook",
+    "eventTypeVersion": "1.0",
+    "cloudEventsVersion": "0.1",
+    "source": "https://.okta.com/api/v1/eventHooks/who6syk7a443ObH2J2p7",
+    "eventId": "1028126f-b73d-44fb-95d8-cc04091bde41",
+    "data": {
+        "events": [
+            {
+                "uuid": "b5eaccac-7a8e-11ea-8b44-3be4feb0d831",
+                "published": "2020-04-09T18:19:54.423Z",
+                "eventType": "group.user_membership.add",
+                "version": "0",
+                "displayMessage": "Add user to group membership",
+                "severity": "INFO",
+                "client": {
+                    "ipChain": []
+                },
+                "actor": {
+                    "id": "1b4gwZHqKX35mpIkK2z6",
+                    "type": "User",
+                    "alternateId": "myles@email.com",
+                    "displayName": "Myles Loffler"
+                },
+                "outcome": {
+                    "result": "SUCCESS"
+                },
+                "target": [
+                    {
+                        "id": "2b4gwZHqKX35mpIkK2z6",
+                        "type": "User",
+                        "alternateId": "john.doe@email.com",
+                        "displayName": "John Doe"
+                    },
+                    {
+                        "id": "3b4gwZHqKX35mpIkK2z6",
+                        "type": "UserGroup",
+                        "alternateId": "unknown",
+                        "displayName": "AWS_SuperAdmins"
+                    }
+                ],
+                "transaction": {
+                    "type": "JOB",
+                    "id": "4b4gwZHqKX35mpIkK2z6",
+                    "detail": {}
+                },
+                "debugContext": {
+                    "debugData": {
+                        "threatSuspected": "false",
+                        "targetEventHookIds": "5b4gwZHqKX35mpIkK2z6"
+                    }
+                },
+                "legacyEventType": "core.user_group_member.user_add",
+                "authenticationContext": {
+                    "authenticationStep": 0,
+                    "externalSessionId": "flskzA9d0as0dfERbnv_yGshw"
+                },
+                "securityContext": {}
+            }
+        ]
+    },
+    "eventTime": "2020-04-09T18:20:01.678Z",
+    "contentType": "application/json"
+}
