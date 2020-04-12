@@ -69,7 +69,7 @@ Resources:
       GenerateSecretString:
         SecretStringTemplate: "{\"aws_sso_scim_key\": \"<MUST BE PROVIDED>\"}"
         GenerateStringKey: "auth_token_for_okta"
-        PasswordLength: 128
+        PasswordLength: 256
 
   OktaEventsApi:
     Type: "AWS::Serverless::Api"
