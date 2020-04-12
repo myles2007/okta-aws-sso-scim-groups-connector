@@ -10,6 +10,7 @@ TARGET_TYPE_GROUP = "UserGroup"
 TARGET_TYPE_USER = "User"
 
 AWS_GROUP_PREFIX = os.environ['GROUP_PREFIX']
+SECRET_ID = os.environ("SECRET_ID")
 SCIM_URL = os.environ['SCIM_URL']
 
 PATCH_OPERATION_FOR_OKTA_EVENT = {
@@ -130,7 +131,7 @@ def get_aws_sso_groups(scim_key):
 def retrieve_scim_key():
     client = boto3.client('secretsmanager')
     secret =  client.get_secret_value(
-        SecretId="app/okta-to-aws-sso"
+        SecretId=SECRET_ID
     )
     secret_string = json.loads(secret['SecretString'])
     scim_key = secret_string['aws_sso_scim_key']
