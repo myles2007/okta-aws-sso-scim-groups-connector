@@ -4,7 +4,6 @@
 - [Why it Exists](#why-it-exists)
 - [What it Does Not Do](#what-it-does-not-do)
 - [Operational Considerations](#operational-considerations)
-  - [Group Names](#group-names)
   - [Group Renames](#group-renames)
   - [Scalability](#scalability)
     - [Event Delivery Guarantees](#event-delivery-guarantees)
@@ -19,7 +18,7 @@
   - [Inspecting Logs (optional)](#inspecting-logs-optional)
 
 # What it Does
-This application listens to group membership events from Okta and syncrhonizes membership changes to identically named groups in AWS SSO which begin with the prefix `AWS_`. Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO for automatic provisioning.
+This application listens to group membership events from Okta and syncrhonizes membership changes to identically named groups in AWS SSO which begin with your chosen prefix (`AWS_` by default). Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO for automatic provisioning.
 
 # Why it Exists
 The company I work for (BriteCore) utilizes Okta as our identity provider and wants to adopt AWS Single Sign-on (SSO) to simplify access and access management for our growing number of AWS accounts.
@@ -49,16 +48,13 @@ This is because:
 # Operational Considerations
 I put this solution together quickly and in my spare time. My aim was to solve the general need, not solve the problem perfectlty. I welcome contributions and will likely introduce a few improvements myself, but for now there are a few things you should keep in mind if you choose to utilize it yourself.
 
- ## Group Names
-This application will only pay attention to group membership changes for groups beginning with the `AWS_` prefix. This prefix is not currently configurable.
-
 ## Group Renames
 
 Renaming a group in Okta will break ongoing syncrhonization.
 
 As noted in the [What it Does Not Do](#what-it-does-not-do) section, this application does not syncrhonize renames. As indicated in the [What it Does](#what-it-does) section, it only synchronizes group names which match exactly.
 
-To work around this limitation, create a new group with the desired name (remember, it must start with `AWS_`), migrate all membership from the existing group to the new one, and then delete the old one.
+To work around this limitation, create a new group with the desired name, migrate all membership from the existing group to the new one, and then delete the old one.
 
  ## Scalability
    

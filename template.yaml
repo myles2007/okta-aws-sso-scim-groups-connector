@@ -19,6 +19,10 @@ Parameters:
   ScimUrl:
     Type: String
     Description: "The SCIM url provided when setting up AWS SSO."
+  GroupPrefix:
+    Type: String
+    Description: "The prefix for Okta groups which this application should care about."
+    Default: "AWS_"
 
 Metadata:
   AWS::ServerlessRepo::Application:
@@ -146,6 +150,7 @@ Resources:
       Environment:
         Variables:
           SCIM_URL: !Ref ScimUrl
+          GROUP_PREFIX: !Ref GroupPrefix
       Role: !GetAtt EventProcessorRole.Arn
 
   TokenAuthorizer:
