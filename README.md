@@ -1,4 +1,4 @@
-# Okta AWS SSO SCIM Groups <!-- omit in toc -->
+# Okta AWS SSO SCIM Groups Connector <!-- omit in toc -->
 
 - [What it Does](#what-it-does)
 - [Why it Exists](#why-it-exists)
@@ -160,7 +160,7 @@ The first command will build source of the application. The second command will 
 You can find your API Gateway Endpoint URL in the output values displayed after deployment. Take note of it as you'll need it to configure an event hook in Okta. You'll also need to retrieve the value of the API it created from AWS API Gateway.
 
 ## Manage Your Secrets
-Navigate to the secret created by the deployment (it's named `app/okta-to-aws-sso`) and retrieve the secret value. In plain text, it should look like the following:
+Navigate to the secret created by the deployment (it's named `app/okta-aws-sso-scim-groups-connector`) and retrieve the secret value. In plain text, it should look like the following:
 
 ```json
  {

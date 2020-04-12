@@ -1,9 +1,14 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  okta-aws-sso-sicm
+  Okta AWS SSO SCIM Groups Connector
 
-  Sample SAM Template for okta-aws-sso-sicm
+  This application listens to group membership events from Okta and syncrhonizes
+  membership changes to identically named groups in AWS SSO which begin with the
+  prefix `AWS_`.
+
+  Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO
+  for automatic provisioning.
 
 # More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
@@ -19,7 +24,7 @@ Resources:
   ReadAppSecretsPolicy:
     Type: "AWS::IAM::ManagedPolicy"
     Properties:
-      Path: "/app/okta-aws-sso-scim-connector/read-secrets/"
+      Path: "/app/okta-aws-sso-scim-groups-connector/read-secrets/"
       PolicyDocument:
         Version: "2012-10-17"
         Statement:
@@ -30,7 +35,7 @@ Resources:
   TokenAuthorizerRole:
     Type: "AWS::IAM::Role"
     Properties:
-      Path: "/app/okta-aws-sso-scim-connector/token-authorizer/"
+      Path: "/app/okta-aws-sso-scim-groups-connector/token-authorizer/"
       ManagedPolicyArns:
         - !Ref ReadAppSecretsPolicy
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -47,7 +52,7 @@ Resources:
   EventProcessorRole:
     Type: "AWS::IAM::Role"
     Properties:
-      Path: "/app/okta-aws-sso-scim-connector/event-processor/"
+      Path: "/app/okta-aws-sso-scim-groups-connector/event-processor/"
       ManagedPolicyArns:
         - !Ref ReadAppSecretsPolicy
         - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
@@ -65,7 +70,7 @@ Resources:
     Type: AWS::SecretsManager::Secret
     Properties:
       Description: "Contains the secrets expected to be provided by Okta and required by AWS SSO."
-      Name: app/okta-to-aws-sso
+      Name: app/okta-aws-sso-scim-groups-connector
       GenerateSecretString:
         SecretStringTemplate: "{\"aws_sso_scim_key\": \"<MUST BE PROVIDED>\"}"
         GenerateStringKey: "auth_token_for_okta"
