@@ -1,121 +1,197 @@
-# okta-aws-sso-sicm
+# Okta AWS SSO SCIM Groups <!-- omit in toc -->
 
-## Warning: This README is not currently up to date.
+- [What it Does](#what-it-does)
+- [Why it Exists](#why-it-exists)
+- [What it Does Not Do](#what-it-does-not-do)
+- [Operational Considerations](#operational-considerations)
+  - [Group Names](#group-names)
+  - [Group Renames](#group-renames)
+  - [Scalability](#scalability)
+    - [Event Delivery Guarantees](#event-delivery-guarantees)
+    - [Event Amalgamation](#event-amalgamation)
+    - [Number of Users and Groups](#number-of-users-and-groups)
+- [Infrastructure/Architecture](#infrastructurearchitecture)
+- [Project Structure](#project-structure)
+- [Deployment](#deployment)
+  - [Deploying to AWS](#deploying-to-aws)
+  - [Manage Your Secrets](#manage-your-secrets)
+  - [Configuring an Event Hook in Okta](#configuring-an-event-hook-in-okta)
+  - [Inspecting Logs (optional)](#inspecting-logs-optional)
 
-This project contains source code and supporting files for a serverless application that you can deploy with the SAM CLI. It includes the following files and folders.
+# What it Does
+This application listens to group membership events from Okta and syncrhonizes membership changes to identically named groups in AWS SSO which begin with the prefix `AWS_`. Changes are effected by interacting with the SCIM 2.0 endpoint provided by AWS SSO for automatic provisioning.
 
-- hello_world - Code for the application's Lambda function.
-- events - Invocation events that you can use to invoke the function.
-- tests - Unit tests for the application code. 
-- template.yaml - A template that defines the application's AWS resources.
+# Why it Exists
+The company I work for (BriteCore) utilizes Okta as our identity provider and wants to adopt AWS Single Sign-on (SSO) to simplify access and access management for our growing number of AWS accounts.
 
-The application uses several AWS resources, including Lambda functions and an API Gateway API. These resources are defined in the `template.yaml` file in this project. You can update the template to add AWS resources through the same deployment process that updates your application code.
+[AWS SSO supports SAML 2.0 IdPs and automated provisioning via SCIM][aws-sso-external-idp-docs], but unfortunately there's an issue with the SCIM provisioning between Okta and AWS SSO at this time (2020-04-11). Specifically, attempting to push group membership from Okta to AWS SSO results an error like the following.
 
-If you prefer to use an integrated development environment (IDE) to build and test your application, you can use the AWS Toolkit.  
-The AWS Toolkit is an open source plug-in for popular IDEs that uses the SAM CLI to build and deploy serverless applications on AWS. The AWS Toolkit also adds a simplified step-through debugging experience for Lambda function code. See the following links to get started.
+> Failed on 03-26-2020 03:49:35PM UTC: Unable to update Group Push mapping target App group AWS_SecurityRO: Error while creating user group AWS_SecurityRO: Bad Request. Errors reported by remote server: Request is unparsable, syntactically incorrect, or violates schema.
 
-* [PyCharm](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [IntelliJ](https://docs.aws.amazon.com/toolkit-for-jetbrains/latest/userguide/welcome.html)
-* [VS Code](https://docs.aws.amazon.com/toolkit-for-vscode/latest/userguide/welcome.html)
-* [Visual Studio](https://docs.aws.amazon.com/toolkit-for-visual-studio/latest/user-guide/welcome.html)
+This is particularly unfortunate because it is not possible to manage group membership directly in AWS SSO while SCIM provisioning is enabled. Disabling automatic provisioning and just using Okta as the IdP is an option, but one which comes with a big downside: managing user provisioning in two places. :frowning:
 
-## Deploy the sample application
+In speaking with AWS Support, I was informed that this is a known issue with a planned resolution. Unfortunately, but not unsurprisingly, only a rough timeline of 3-6 months from 2020-03-27 was available. Realizing SCIM is an open protocol and not wanting to wait an unknown amount of time for a fix, I decided to make my own. I also hope to help out [others facing the same issue][okta-support-forum-issue]. :smile:
 
-The Serverless Application Model Command Line Interface (SAM CLI) is an extension of the AWS CLI that adds functionality for building and testing Lambda applications. It uses Docker to run your functions in an Amazon Linux environment that matches Lambda. It can also emulate your application's build environment and API.
+[okta-support-forum-issue]: https://support.okta.com/help/s/question/0D51Y000081nHGTSA2/cannot-use-groups-push-with-aws-sso
+[aws-sso-external-idp-docs]: https://docs.aws.amazon.com/singlesignon/latest/userguide/manage-your-identity-source-idp.html
 
-To use the SAM CLI, you need the following tools.
+# What it Does Not Do
+This application **does not**:
 
-* SAM CLI - [Install the SAM CLI](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html)
-* [Python 3 installed](https://www.python.org/downloads/)
-* Docker - [Install Docker community edition](https://hub.docker.com/search/?type=edition&offering=community)
+  * Add/remove/update users in AWS SSO based on changes in Okta.
+  * Add/remove groups in AWS SSO based on changes in Okta.
+  * Syncrhonize group name/description changes in AWS SSO based on changes in Okta.
 
-To build and deploy your application for the first time, run the following in your shell:
+This is because:
+ * The SCIM integration between AWS SSO and Okta works for the first two points.
+ * Okta does not provide hookable events around group renames and description updates.
+
+# Operational Considerations
+I put this solution together quickly and in my spare time. My aim was to solve the general need, not solve the problem perfectlty. I welcome contributions and will likely introduce a few improvements myself, but for now there are a few things you should keep in mind if you choose to utilize it yourself.
+
+ ## Group Names
+This application will only pay attention to group membership changes for groups beginning with the `AWS_` prefix. This prefix is not currently configurable.
+
+## Group Renames
+
+Renaming a group in Okta will break ongoing syncrhonization.
+
+As noted in the [What it Does Not Do](#what-it-does-not-do) section, this application does not syncrhonize renames. As indicated in the [What it Does](#what-it-does) section, it only synchronizes group names which match exactly.
+
+To work around this limitation, create a new group with the desired name (remember, it must start with `AWS_`), migrate all membership from the existing group to the new one, and then delete the old one.
+
+ ## Scalability
+   
+While the underlying technology is scalable, I've conducted no significant load testing for this solution. 
+
+### Event Delivery Guarantees
+Okta events are delivered at least once and do not guarnatee ordering. This could present an issue if the same user's presence in is rapidly changed in the same group. In this case, out of order or repeated executions could leave the membership in an undesired state.
+
+Practically speaking, this is very unlikely to be an issue during normal use of this application for the following reasons:
+
+  * Adding and removing a user from the same group are actions which are very likely to be temporally distanced enough from each other that ordering is preserved.
+  * Adding/removing users is effectively idempotent when isolated from ordering issues.
+
+
+### Event Amalgamation
+Okta may amalgamate multiple events which occur temporally close together into a single event delivery. This application currently attempts to effect all changes indicated in a received event at the time of its receipt.
+
+Currently, the Lambda function (and Okta) have a 3 second timeout in place which could be exceeded depending upon the number of events sent in a single notification. This problem is aggravated by the fact that AWS SSO's SCIM implementation does not currently allow batch changes.
+
+In practice, I've not yet seen this be an issue, even when adding/remove a number of users to/from a group at the same time via Okta's UI.
+
+### Number of Users and Groups
+To gather sufficient information to generate the group membership patches, this applicaiton requests member and group listings from AWS SSO's SCIM API. To avoid dealing with pagination and the latency of multiple requests, it currently makes a request for the first 1000 users and 1000 groups. It does not handle multiple pages.
+
+Practically, this means the application will not work in all cases if you have more than 1000 users or more than 1000 groups. It's also possible that latency could become problematic with large numbers of users or that there is an execution time error that will caues a request for such a large number of users/groups to fail.
+
+The user directory I've used to test this application has around 250 users and less than 5 groups.
+
+
+# Infrastructure/Architecture
+This application's infrastructure is defined using [AWS SAM][]. It is fully serverless, written in Python, and intended to be deployed to the AWS Cloud. At this time, it is expected to be manually deployed using [AWS SAM CLI][] (see the [Deployment](#deployment) section).
+
+At a high level:
+ * [AWS Lambda][] is utilized for all compute.
+ * [AWS API Gateway][] is used to define and host the API.
+ * [AWS Secrets Manager][] is used to securely store/access secrets.
+ * [AWS IAM][] is used to create an application specific policy and roles.
+
+Please see [template.yaml](template.yaml) for more details regarding the infrastructure.
+
+[AWS SAM]: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html
+[AWS SAM CLI]: https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-install.html
+[AWS Lambda]: https://aws.amazon.com/lambda/
+[AWS API Gateway]: https://docs.aws.amazon.com/apigateway/ 
+[AWS Secrets Manager]: https://docs.aws.amazon.com/secretsmanager/
+[AWS IAM]: https://docs.aws.amazon.com/iam/
+
+# Project Structure
+This is a simple application with a simple structure.
+
+- [app](app/) - Code for the application's Lambda functions.
+- [events](events/) - Invocation events that you can use to invoke the function.
+- [tests](tests/) - Unit tests for the application code. 
+- [template.yaml](template.yaml) - A template that defines the application's AWS resources.
+
+>:notebook: **Note**
+>
+> Currently the `events/` and `tests/` directories contain only boiler plate files instantiated when this project was created from a template.
+
+# Deployment
+> :notebook: **Note**
+>
+> For the time being, the steps below are focused exclusively on deploying this application to AWS and configuring the needed event hook in Okta. They assume you have already:
+>
+> 1. Configured a SAML 2.0 applicaiton in Okta.
+> 2. Configured AWS SSO to use Okta as its IdP.
+> 3. Enabled SCIM provisioning in AWS SSO and Okta.
+>    * You will also need the SCIM endpoint and access key provided during this process. The URL is retrievable at any time, but access keys are only provided at the time of creation.
+>
+> Please refer to the documentation [here (1)](https://controltower.aws-management.tools/infrastructure/sso/okta_sso/) and [here (2)](https://docs.aws.amazon.com/singlesignon/latest/userguide/provision-automatically.html) before beginning if you have not already taken these actions.
+
+## Deploying to AWS
+
+This application is defined using [AWS SAM][] and is currently intended to be manually deployed using [AWS SAM CLI][]. To deploy this application to your own AWS account, first do the following:
+
+ 1. [Install Docker][docker-install]
+ 2. Install Python 3 – Recommended: [Use pyenv and pyenv-virtualenv][install-python3]
+ 3. Install SAM CLI the SAM CLI – Recommended: `pip install aws-sam-cli` in your venv.
+
+[docker-install]: https://hub.docker.com/search/?type=edition&offering=community
+[install-python3]: https://github.com/pyenv/pyenv
+
+With the above needs satsified, run the following commands in your shell to deploy the application for the first time:
 
 ```bash
 sam build --use-container
 sam deploy --guided
 ```
 
-The first command will build the source of your application. The second command will package and deploy your application to AWS, with a series of prompts:
+The first command will build source of the application. The second command will package and deploy it to AWS following a series of prompts:
 
-* **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region, and a good starting point would be something matching your project name.
-* **AWS Region**: The AWS region you want to deploy your app to.
+* **Stack Name**: The name of the stack to deploy to CloudFormation. This should be unique to your account and region.
+* **AWS Region**: The AWS region where you want to deploy the application.
+* **Parameter ScimUrl**: The SCIM url provided to you when you configured automatic provisioning in AWS SSO.
 * **Confirm changes before deploy**: If set to yes, any change sets will be shown to you before execution for manual review. If set to no, the AWS SAM CLI will automatically deploy application changes.
-* **Allow SAM CLI IAM role creation**: Many AWS SAM templates, including this example, create AWS IAM roles required for the AWS Lambda function(s) included to access AWS services. By default, these are scoped down to minimum required permissions. To deploy an AWS CloudFormation stack which creates or modified IAM roles, the `CAPABILITY_IAM` value for `capabilities` must be provided. If permission isn't provided through this prompt, to deploy this example you must explicitly pass `--capabilities CAPABILITY_IAM` to the `sam deploy` command.
+* **Allow SAM CLI IAM role creation**: The SAM template for this application creates IAM roles, so you will need to allow SAM CLI to create IAM roles.
 * **Save arguments to samconfig.toml**: If set to yes, your choices will be saved to a configuration file inside the project, so that in the future you can just re-run `sam deploy` without parameters to deploy changes to your application.
 
-You can find your API Gateway Endpoint URL in the output values displayed after deployment.
+You can find your API Gateway Endpoint URL in the output values displayed after deployment. Take note of it as you'll need it to configure an event hook in Okta. You'll also need to retrieve the value of the API it created from AWS API Gateway.
 
-## Use the SAM CLI to build and test locally
+## Manage Your Secrets
+Navigate to the secret created by the deployment (it's named `app/okta-to-aws-sso`) and retrieve the secret value. In plain text, it should look like the following:
 
-Build your application with the `sam build --use-container` command.
-
-```bash
-okta-aws-sso-sicm$ sam build --use-container
+```json
+ {
+   "aws_sso_scim_key": "<MUST BE PROVIDED>",
+   "auth_token_for_okta": "<a 256 character generated string>"
+ }
 ```
 
-The SAM CLI installs dependencies defined in `hello_world/requirements.txt`, creates a deployment package, and saves it in the `.aws-sam/build` folder.
+To proceed:
+1. Take note of the `auth_token_for_okta`; you'll need it to configure Okta.
+2. Input the SCIM access key/token as the value for `aws-sso-scim-key`.
 
-Test a single function by invoking it directly with a test event. An event is a JSON document that represents the input that the function receives from the event source. Test events are included in the `events` folder in this project.
+## Configuring an Event Hook in Okta
+Please follow the instructions in [Okta's documentation](https://console.aws.amazon.com/secretsmanager/home?region=us-east-1#/secret?name=app%2Fokta-to-aws-sso).
 
-Run functions locally and invoke them with the `sam local invoke` command.
+As depicted below, you'll need to provide the following inputs:
 
-```bash
-okta-aws-sso-sicm$ sam local invoke HelloWorldFunction --event events/event.json
-```
+1. **Name**: This can be anything you want.
+2. **URL**: This is the SCIM endpoint URL provided by AWS SSO when configuring automatic provisioning.
+3. **Authentication field**: You must use 'Authorization'
+4. **Authentication secret**: The value found in `auth_token_for_okta`.
+5. **Custom header fields**: Add `x-api-key` and set the API key as its value.
+6. **Subscribe to events**: Subscribe to 'User added to group' and 'User removed from group'.
 
-The SAM CLI can also emulate your application's API. Use the `sam local start-api` to run the API locally on port 3000.
+![okta-config-screenshot](docs/assets/okta-event-hook-configuration.png)
 
-```bash
-okta-aws-sso-sicm$ sam local start-api
-okta-aws-sso-sicm$ curl http://localhost:3000/
-```
+If your event hook verifies successfully, everything should be working. 
 
-The SAM CLI reads the application template to determine the API's routes and the functions that they invoke. The `Events` property on each function's definition includes the route and method for each path.
-
-```yaml
-      Events:
-        HelloWorld:
-          Type: Api
-          Properties:
-            Path: /hello
-            Method: get
-```
-
-## Add a resource to your application
-The application template uses AWS Serverless Application Model (AWS SAM) to define application resources. AWS SAM is an extension of AWS CloudFormation with a simpler syntax for configuring common serverless application resources such as functions, triggers, and APIs. For resources not included in [the SAM specification](https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md), you can use standard [AWS CloudFormation](https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-template-resource-type-ref.html) resource types.
-
-## Fetch, tail, and filter Lambda function logs
-
-To simplify troubleshooting, SAM CLI has a command called `sam logs`. `sam logs` lets you fetch logs generated by your deployed Lambda function from the command line. In addition to printing the logs on the terminal, this command has several nifty features to help you quickly find the bug.
+## Inspecting Logs (optional)
+SAM CLI has a command called `sam logs`. The `sam logs` command lets you fetch logs generated by a deployed lambda function from the command line.
 
 `NOTE`: This command works for all AWS Lambda functions; not just the ones you deploy using SAM.
 
-```bash
-okta-aws-sso-sicm$ sam logs -n HelloWorldFunction --stack-name okta-aws-sso-sicm --tail
-```
-
 You can find more information and examples about filtering Lambda function logs in the [SAM CLI Documentation](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-logging.html).
-
-## Unit tests
-
-Tests are defined in the `tests` folder in this project. Use PIP to install the [pytest](https://docs.pytest.org/en/latest/) and run unit tests.
-
-```bash
-okta-aws-sso-sicm$ pip install pytest pytest-mock --user
-okta-aws-sso-sicm$ python -m pytest tests/ -v
-```
-
-## Cleanup
-
-To delete the sample application that you created, use the AWS CLI. Assuming you used your project name for the stack name, you can run the following:
-
-```bash
-aws cloudformation delete-stack --stack-name okta-aws-sso-sicm
-```
-
-## Resources
-
-See the [AWS SAM developer guide](https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/what-is-sam.html) for an introduction to SAM specification, the SAM CLI, and serverless application concepts.
-
-Next, you can use AWS Serverless Application Repository to deploy ready to use Apps that go beyond hello world samples and learn how authors developed their applications: [AWS Serverless Application Repository main page](https://aws.amazon.com/serverless/serverlessrepo/)
