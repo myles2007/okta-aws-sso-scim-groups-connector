@@ -1,3 +1,10 @@
+# NOTICE
+There is now a working, native intgration between Okta and AWS SSO. Should you come across this repository, please use that integration instead. :smile:
+
+Additionally, [AWS announced](https://aws.amazon.com/about-aws/whats-new/2020/09/aws-single-sign-on-adds-account-assignment-apis-and-aws-cloudformation-support-to-automate-multi-account-access-management/) AWS SSO related CloudFormation resources and administrative APIs on 2020-09-10.
+
+----
+
 # Okta AWS SSO SCIM Groups Connector <!-- omit in toc -->
 
 - [What it Does](#what-it-does)
